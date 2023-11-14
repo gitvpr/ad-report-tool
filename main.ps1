@@ -1,3 +1,4 @@
+#test
 #Load following assemblies in order to run the program in PS Console or VC Studio.
 try{
     Add-Type -AssemblyName PresentationCore, PresentationFramework
