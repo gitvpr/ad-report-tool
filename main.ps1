@@ -8,7 +8,9 @@ catch{
     exit
 }
 
-$xamlFilePath = "C:\Users\vpr\Documents\ad-report-tool\MainWindow.xaml"
+#Set location of xaml file.
+$path = Get-Location
+$xamlFilePath = "$path\MainWindow.xaml"
 #Download XAML file contents replacing every x:Name with Name.
 $xml = (New-Object -TypeName System.Net.WebClient).DownloadString($xamlFilePath) -replace "x:Name", "Name"
 #Ensure that $xml variable is of XML type.
