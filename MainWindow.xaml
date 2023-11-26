@@ -11,6 +11,7 @@
 >
     <Grid>
         <TabControl>
+            <!-- Users -->
             <TabItem Header="Users">
                 <Grid Background="LightBlue">
                     <Grid.RowDefinitions>
@@ -29,7 +30,7 @@
                         <TextBlock Grid.Column="0" Text="Filter users:  "/>
                         <TextBox Grid.Column="1" x:Name="txtBoxFilterUsername"  AcceptsReturn="False" TextWrapping="Wrap"   />
                         <TextBlock Grid.Column="4" Text="Filter user groups:"/>
-                        <TextBox Grid.Column="5" x:Name="txtBoxFilterUsernames"  AcceptsReturn="False" TextWrapping="Wrap"   />
+                        <TextBox Grid.Column="5" x:Name="txtBoxFilterUserGroups"  AcceptsReturn="False" TextWrapping="Wrap"   />
                     </Grid>
 
                     <Grid Grid.Row="1">
@@ -150,7 +151,7 @@
                                     <ColumnDefinition Width="*"></ColumnDefinition>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Filter user GPOs:  "/>
-                                <TextBox Grid.Column="1" x:Name="txtBoxFilterUsernasmes"  AcceptsReturn="False" TextWrapping="Wrap"   />
+                                <TextBox Grid.Column="1" x:Name="txtBoxFilterUserGPOs"  AcceptsReturn="False" TextWrapping="Wrap"   />
                             </Grid>
                             <DataGrid Grid.Row="2" Name="userGposDataGrid" SelectionMode="Single"  AutoGenerateColumns="False" SelectionUnit="FullRow" CanUserAddRows="False" IsReadOnly="True"
                             GridLinesVisibility="Horizontal" CanUserReorderColumns="True" AlternationCount="2" AlternatingRowBackground="Beige" RowBackground="LightBlue">
@@ -171,6 +172,7 @@
                     </Grid>
                 </Grid>
             </TabItem>
+            <!-- Groups -->
             <TabItem Header="Groups">
                 <Grid Background="LightBlue">
                     <Grid.RowDefinitions>
@@ -183,69 +185,81 @@
                         <ColumnDefinition Width="35*"></ColumnDefinition>
                     </Grid.ColumnDefinitions>
                     <Grid Grid.Column="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="40*"></ColumnDefinition>
-                                <ColumnDefinition Width="60*"></ColumnDefinition>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="Filter gropus:"/>
-                            <TextBox Grid.Column="1" x:Name="txtBxFilterUsername"  AcceptsReturn="False" TextWrapping="Wrap"   />
-                        </Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40*"></ColumnDefinition>
+                            <ColumnDefinition Width="60*"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Filter gropus:"/>
+                        <TextBox Grid.Column="1" x:Name="txtBoxFilterGroup"  AcceptsReturn="False" TextWrapping="Wrap"   />
+                    </Grid>
                     <Grid Grid.Column="2" >
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"></ColumnDefinition>
                             <ColumnDefinition Width="*"></ColumnDefinition>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="Filter users in group:"/>
-                        <TextBox Grid.Column="1" x:Name="txtxFilterUsername"  AcceptsReturn="False" TextWrapping="Wrap"   />
+                        <TextBlock Grid.Column="0" Text="Filter group members:"/>
+                        <TextBox Grid.Column="1" x:Name="txtFilterGroupMembers"  AcceptsReturn="False" TextWrapping="Wrap"   />
                     </Grid>
-                    <DataGrid Grid.Column="0" Grid.Row="1" Name="groups" SelectionMode="Single"  AutoGenerateColumns="False" SelectionUnit="FullRow" CanUserAddRows="False" IsReadOnly="True"
+                    <DataGrid Grid.Column="0" Grid.Row="1" Name="groupDataGrid" SelectionMode="Single"  AutoGenerateColumns="False" SelectionUnit="FullRow" CanUserAddRows="False" IsReadOnly="True"
                     GridLinesVisibility="Horizontal" CanUserReorderColumns="True" AlternationCount="2" AlternatingRowBackground="Beige" RowBackground="LightBlue">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Binding="{Binding gpoName}" Width="190">
+                            <DataGridTextColumn Binding="{Binding samAccountName}" Width="190">
                                 <DataGridTextColumn.Header>
                                     <TextBlock Text="Group name" FontSize="18" Width="Auto"/>
                                 </DataGridTextColumn.Header>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Binding="{Binding trusteeName}" Width="Auto">
+                            <!-- <DataGridTextColumn Binding="{Binding groupUserCount}" Width="Auto">
                                 <DataGridTextColumn.Header>
                                     <TextBlock Text="User count" FontSize="18" Width="Auto"/>
                                 </DataGridTextColumn.Header>
-                            </DataGridTextColumn>
+                            </DataGridTextColumn> -->
                         </DataGrid.Columns>
                     </DataGrid>
-                    <!--Miejsce na srodkowy panel -->
+                    <Grid Grid.Column="1" Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="50*"></ColumnDefinition>
+                            <ColumnDefinition Width="50*"></ColumnDefinition>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="3">
+                            <Label Content="Group details:" FontWeight="Bold" FontSize="18" Padding="0" />
+                            <Label Content="Member count:" FontWeight="Bold" Padding="0"/>
+                            <Label Content="Group scope:" FontWeight="Bold" Padding="0"/>
+                            <Label Content="Group category:" FontWeight="Bold" Padding="0"/>
+                            <Label Content="Canonical name:" FontWeight="Bold" Padding="0"/>
+                            <Label Content="Created:" FontWeight="Bold" Padding="0"/>
+                            <Label Content="Modified:" FontWeight="Bold" Padding="0"/>
+                            <Label Content="Deletion protected:" FontWeight="Bold" Padding="0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1"  Margin="3">
+                            <TextBlock Name="txtBlock_groupDetails" Text="{Binding groupDetails}" FontWeight="Bold" FontSize="18"  />
+                            <TextBlock Name="txtBlock_memberCount" Text="{Binding memberCount}" FontWeight="Bold" />
+                            <TextBlock Name="txtBlock_groupScope" Text="{Binding groupScope}" FontWeight="Bold" />
+                            <TextBlock Name="txtBlock_groupCategory" Text="{Binding groupCategory}" FontWeight="Bold" />
+                            <TextBlock Name="txtBlock_groupCanonicalName" Text="{Binding groupCanonicalName}" FontWeight="Bold" />
+                            <TextBlock Name="txtBlock_groupCreated" Text="{Binding groupCreated}" FontWeight="Bold" />
+                            <TextBlock Name="txtBlock_groupModified" Text="{Binding groupModified}" FontWeight="Bold" />
+                            <TextBlock Name="txtBlock_deletionProtected" Text="{Binding deletionProtected}" FontWeight="Bold" />
+                        </StackPanel>
+                    </Grid>
                     <Grid Grid.Row="1" Grid.Column="2">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="40*" />
+                            <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="40*" />
                         </Grid.RowDefinitions>
-                        <DataGrid Grid.Row="0" Name="groupMembers" SelectionMode="Single"  AutoGenerateColumns="False" SelectionUnit="FullRow" CanUserAddRows="False" IsReadOnly="True"
+                        <DataGrid Grid.Row="0" Name="groupMembersDataGrid" SelectionMode="Single"  AutoGenerateColumns="False" SelectionUnit="FullRow" CanUserAddRows="False" IsReadOnly="True"
                         GridLinesVisibility="Horizontal" CanUserReorderColumns="True" AlternationCount="2" AlternatingRowBackground="Beige" RowBackground="LightBlue">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Binding="{Binding gpoName}" Width="190">
+                                <DataGridTextColumn Binding="{Binding displayName}" Width="190">
                                     <DataGridTextColumn.Header>
-                                        <TextBlock Text="Group name" FontSize="18" Width="Auto"/>
+                                        <TextBlock Text="Member name" FontSize="18" Width="Auto"/>
                                     </DataGridTextColumn.Header>
                                 </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding trusteeName}" Width="Auto">
+                                <DataGridTextColumn Binding="{Binding objectClass}" Width="Auto">
                                     <DataGridTextColumn.Header>
-                                        <TextBlock Text="User count" FontSize="18" Width="Auto"/>
-                                    </DataGridTextColumn.Header>
-                                </DataGridTextColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-                        <DataGrid Grid.Row="2" Name="groupIsMemberOf" SelectionMode="Single"  AutoGenerateColumns="False" SelectionUnit="FullRow" CanUserAddRows="False" IsReadOnly="True"
-                        GridLinesVisibility="Horizontal" CanUserReorderColumns="True" AlternationCount="2" AlternatingRowBackground="Beige" RowBackground="LightBlue">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Binding="{Binding gpoName}" Width="190">
-                                    <DataGridTextColumn.Header>
-                                        <TextBlock Text="Group name" FontSize="18" Width="Auto"/>
-                                    </DataGridTextColumn.Header>
-                                </DataGridTextColumn>
-                                <DataGridTextColumn Binding="{Binding trusteeName}" Width="Auto">
-                                    <DataGridTextColumn.Header>
-                                        <TextBlock Text="User count" FontSize="18" Width="Auto"/>
+                                        <TextBlock Text="Member Type" FontSize="18" Width="Auto"/>
                                     </DataGridTextColumn.Header>
                                 </DataGridTextColumn>
                             </DataGrid.Columns>
