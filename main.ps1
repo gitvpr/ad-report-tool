@@ -1,6 +1,6 @@
 #Load following assemblies in order to run the program in PS Console or VC Studio.
 try{
-    Add-Type -AssemblyName PresentationCore, PresentationFramework
+    Add-Type -AssemblyName PresentationCore, PresentationFramework, WindowsBase
 }
 catch{
     Write-Error "Failed to load required assemblies."
@@ -36,24 +36,11 @@ try{
 catch{
     Write-Host "Unable to parse xmlNodeReader"; 
     exit
-}	
-
-#Function creating a filterString for given column and text. 
-function filterTxtBox{
-    param(
-        [string]$dataColumn,
-        [string]$filterText
-    )
-
-    if($filterText){
-        $filterString = "$dataColumn LIKE '%$filterText%'"
-    }else{
-        $filterString = "$dataColumn LIKE '%%'" 
-    }
-    return $filterString
 }
 
-
+###############################################################################################################                                                
+################################################## VARIABLES ##################################################
+###############################################################################################################
 $userGroupsDataTable = [System.Data.DataTable]::New()
 $userGroupsDataTable.Columns.AddRange(@(
         'groupName'
@@ -74,55 +61,151 @@ $groupMembersDataTable.Columns.AddRange(@(
     )
 )
 
-#Handler for txtFilterGroupMembers  textbox.
+$userDataTable = [System.Data.DataTable]::New()
+$userDataTable.Columns.AddRange(@(
+        'displayName',
+        'enabled',
+        'samAccountName'
+    )
+)
+
+$groupDataTable = [System.Data.DataTable]::New()
+$groupDataTable.Columns.AddRange(@(
+        'samAccountName'
+    )
+)
+
+$reportDataTable = [System.Data.DataTable]::New()
+
+###############################################################################################################                                                
+################################################## /VARIABLES #################################################
+###############################################################################################################
+
+###############################################################################################################                                                
+################################################## FUNCTIONS ##################################################
+###############################################################################################################
+
+#Function creating a filterString for given column and text. 
+#Used in TxtBox handlers.
+function filterTxtBox{
+    param(
+        [string]$dataColumn,
+        [string]$filterText
+    )
+
+    if($filterText){
+        $filterString = "$dataColumn LIKE '%$filterText%'"
+    }else{
+        $filterString = "$dataColumn LIKE '%%'" 
+    }
+    return $filterString
+}
+
+
+# Function to fetch user data based on a specific filter.
+# Used in reportOptions ListBox.
+function Get-UserDataByFilter {
+    param(
+        [string]$filter,
+        [string]$propertyName
+    )
+
+    # Query the AD for given report option.
+    $userQuery = Get-ADUser -Filter $filter -Properties $propertyName, samAccountName |
+        Select-Object -Property samAccountName, $propertyName
+
+    #Save retrived data to reportDataTable.
+    $reportDataTable.Columns.AddRange(@(
+        'samAccountName',
+        $propertyName
+    ))
+    foreach ($user in $userQuery) {
+        [void]$reportDataTable.Rows.Add(
+            $user.samAccountName,
+            $user.$propertyName
+        )
+    }
+}
+
+function Export-DataToCSV {
+    param (
+        [Parameter(Mandatory=$true)]
+        [Object] $DataGrid
+    )
+
+    $data = $DataGrid.ItemsSource
+    $columns = $DataGrid.Columns
+
+    $csvContent = @()
+
+    #Add header with column names
+    $header = $columns.ForEach({$_.Header})
+    $csvContent += $header -join ','
+
+    #Add data rows
+    foreach ($row in $data) {
+        $rowData = $columns.ForEach({
+            $cellValue = $_.GetCellContent($row).Text
+            $cellValue = $cellValue -replace '"', '""'
+            $cellValue = if ($cellValue -match ',') { "`"$cellValue`"" } else { $cellValue }
+            $cellValue
+        })
+        $csvContent += $rowData -join ','
+    }
+
+    #Save to CSV file
+    $csvContent | Out-File -FilePath "ExportedData.csv"
+
+    Write-Host "Data exported to ExportedData.csv"
+}
+
+###############################################################################################################                                                
+################################################## /FUNCTIONS #################################################
+###############################################################################################################
+
+###############################################################################################################
+############################################### EVENT  HANDLERS ###############################################
+###############################################################################################################
+
+############################################### TxtBox handlers ###############################################
 $txtFilterGroupMembers.Add_TextChanged({
-        #Create filterString based on textbox input using filterTxtBox function.
-        $filterString = filterTxtBox -dataColumn "displayName" -filterText $txtFilterGroupMembers.Text
-        #Filter the datatable and update the datagrid.
-        $groupMembersDataTable.DefaultView.RowFilter = $filterString
-        $groupMembersDataGrid.ItemsSource = $groupMembersDataTable.DefaultView
-    }
+    #Create filterString based on txtbox input using filterTxtBox function.
+    $filterString = filterTxtBox -dataColumn "displayName" -filterText $txtFilterGroupMembers.Text
+    #Filter the datatable and update the datagrid.
+    $groupMembersDataTable.DefaultView.RowFilter = $filterString
+    $groupMembersDataGrid.ItemsSource = $groupMembersDataTable.DefaultView
+}
 )
 
-#Handler for txtBoxFilterUserGPOs textbox.
 $txtBoxFilterUserGPOs.Add_TextChanged({
-        #Create filterString based on textbox input using filterTxtBox function.
-        $filterString = filterTxtBox -dataColumn "gpoName" -filterText $txtBoxFilterUserGPOs.Text
-        #Filter the datatable and update the datagrid.
-        $userGposDataTable.DefaultView.RowFilter = $filterString
-        $userGposDataGrid.ItemsSource = $userGposDataTable.DefaultView
-    }
+    $filterString = filterTxtBox -dataColumn "gpoName" -filterText $txtBoxFilterUserGPOs.Text
+    $userGposDataTable.DefaultView.RowFilter = $filterString
+    $userGposDataGrid.ItemsSource = $userGposDataTable.DefaultView
+}
 )
 
-#Handler for txtBoxFilterUserGroups textbox.
 $txtBoxFilterUserGroups.Add_TextChanged({
-        #Create filterString based on textbox input using filterTxtBox function.
-        $filterString = filterTxtBox -dataColumn "groupName" -filterText $txtBoxFilterUserGroups.Text
-        #Filter the datatable and update the datagrid.
-        $userGroupsDataTable.DefaultView.RowFilter = $filterString
-        $userGroupsDataGrid.ItemsSource = $userGroupsDataTable.DefaultView
-    }
+    $filterString = filterTxtBox -dataColumn "groupName" -filterText $txtBoxFilterUserGroups.Text
+    $userGroupsDataTable.DefaultView.RowFilter = $filterString
+    $userGroupsDataGrid.ItemsSource = $userGroupsDataTable.DefaultView
+}
 )
 
-#Handler for txtBoxFilterGroup textbox.
 $txtBoxFilterGroup.Add_TextChanged({
-        #Create filterString based on textbox input using filterTxtBox function.
-        $filterString = filterTxtBox -dataColumn "samAccountName" -filterText $txtBoxFilterGroup.Text
-        #Filter the datatable and update the datagrid.
-        $groupDataTable.DefaultView.RowFilter = $filterString
-        $groupDataGrid.ItemsSource = $groupDataTable.DefaultView
-    }
+    $filterString = filterTxtBox -dataColumn "samAccountName" -filterText $txtBoxFilterGroup.Text
+    $groupDataTable.DefaultView.RowFilter = $filterString
+    $groupDataGrid.ItemsSource = $groupDataTable.DefaultView
+}
 )
 
-#Handler for txtBoxFilterUsername textbox.
 $txtBoxFilterUsername.Add_TextChanged({
-        #Create filterString based on textbox input using filterTxtBox function.
-        $filterString = filterTxtBox -dataColumn "displayName" -filterText $txtBoxFilterUsername.Text
-        #Filter the datatable and update the datagrid.
-        $userDataTable.DefaultView.RowFilter = $filterString
-        $userDataGrid.ItemsSource = $userDataTable.DefaultView
-    }
+    $filterString = filterTxtBox -dataColumn "displayName" -filterText $txtBoxFilterUsername.Text
+    $userDataTable.DefaultView.RowFilter = $filterString
+    $userDataGrid.ItemsSource = $userDataTable.DefaultView
+}
 )
+###############################################################################################################
+############################################## DataGrid handlers ##############################################
 
 #Handler for selectionChanged action in userDataGrid.
 $userDataGrid.Add_SelectionChanged({
@@ -136,9 +219,9 @@ $userDataGrid.Add_SelectionChanged({
 
             #Retrive further information for selected user.
             $userInfo = Get-ADUser -Identity $selectedUser.samAccountName -Properties emailAddress, title, officePhone, streetAddress, office, department, postalCode, city, state, country, 
-            canonicalName, created, modified, lastLogonDate, lastBadPasswordAttempt, passwordLastSet, passwordExpired, passwordNeverExpires, cannotChangePassword, logonCount, distinguishedName |
-            Select-Object -Property emailAddress, title, officePhone, streetAddress, office, department, postalCode, city, state, country, 
-            canonicalName, created, modified, lastLogonDate, lastBadPasswordAttempt, passwordLastSet, passwordExpired, passwordNeverExpires, cannotChangePassword, logonCount, distinguishedName
+                canonicalName, created, modified, lastLogonDate, lastBadPasswordAttempt, passwordLastSet, passwordExpired, passwordNeverExpires, cannotChangePassword, logonCount, distinguishedName |
+                Select-Object -Property emailAddress, title, officePhone, streetAddress, office, department, postalCode, city, state, country, 
+                canonicalName, created, modified, lastLogonDate, lastBadPasswordAttempt, passwordLastSet, passwordExpired, passwordNeverExpires, cannotChangePassword, logonCount, distinguishedName
 
             #Retrive groups of selected user and add them do data table.
             $userGroups = Get-ADPrincipalGroupMembership -Identity $selectedUser.samAccountName | Select-Object -Property name
@@ -163,7 +246,7 @@ $userDataGrid.Add_SelectionChanged({
                 foreach($trustee in $trustees){
                     foreach($group in $userGroups){
                         #Add GPO to userGposDataTable. 
-                        if ($trustee.Name -eq "Authenticated Users" -or $trustee.Name -eq $selectedUser.displayName -or $group.Name -eq $trustee.Name) {
+                        if ($trustee.Name -eq "Authenticated Users" -or $trustee.Name -eq $selectedUser.samAccountName -or $group.Name -eq $trustee.Name) {
                             [void]$userGposDataTable.Rows.Add(
                                 $gpo.DisplayName,
                                 $trustee.Name
@@ -206,6 +289,7 @@ $userDataGrid.Add_SelectionChanged({
     }
 )
 
+#Handler for selectionChanged action in groupDataGrid.
 $groupDataGrid.Add_SelectionChanged({
         #Clear datatables.
         $groupMembersDataTable.Clear()
@@ -236,18 +320,224 @@ $groupDataGrid.Add_SelectionChanged({
         }
     }
 )
+###############################################################################################################
+############################################## ListBox  handlers ##############################################
+
+#Event handler for SelectionChanged action in reportOptions ListBox.
+$reportOptions.Add_SelectionChanged(
+    {
+        $selectedItem = $reportOptions.SelectedItem
+        $reportDataTable.Dispose()
+        $reportDataTable = [System.Data.DataTable]::New()
+
+        $currentDate = (Get-Date)
+        $next7days = $currentDate.AddDays(7)
+        $next30days = $currentDate.AddDays(30)
+        $last24h = $currentDate.AddDays(-1)
+        $last7days = $currentDate.AddDays(-7)
+        $last30days = $currentDate.AddDays(-30)
+        $last90days = $currentDate.AddDays(-90)
+        $last180days = $currentDate.AddDays(-180)
+
+        
+        #Retrive data based on the selected report option
+        switch ($selectedItem) {
+            "Users created in Last 30 days" {
+                Get-UserDataByFilter -filter {created -ge $last30days} -propertyName 'created'
+            }
+            "Users created in Last 90 days" {
+                Get-UserDataByFilter -filter {created -ge $last90days} -propertyName 'created'
+            }
+            "Users created in Last 180 days" {
+                Get-UserDataByFilter -filter {created -ge $last180days} -propertyName 'created'
+            }
+            "Users modified in Last 30 days" {
+                Get-UserDataByFilter -filter {modified -ge $last30days} -propertyName 'modified'
+            }
+            "Users modified in Last 90 days" {
+                Get-UserDataByFilter -filter {modified -ge $last90days} -propertyName 'modified'
+            }
+            "Users modified in Last 180 days" {
+                Get-UserDataByFilter -filter {modified -ge $last180days} -propertyName 'modified'
+            }
+            "Disabled user accounts" {
+                Get-UserDataByFilter -filter {enabled -eq $false} -propertyName 'enabled'
+            }
+            "Users with expiring account" {
+                $userQuery = Get-ADUser -Filter {accountExpirationDate -like '*'} -Properties samAccountName, accountExpirationDate | 
+                    Select-Object -Property samAccountName, accountNeverExpires
+                $reportDataTable.Columns.AddRange(@(
+                        'samAccountName',
+                        'accountNeverExpires'
+                    )
+                )
+                foreach($user in $userQuery){
+                    $user.accountNeverExpires = $false
+                    [void]$reportDataTable.Rows.Add(
+                        $user.samAccountName,
+                        $user.accountNeverExpires
+                    )
+                } 
+            }
+            "Users with expired account" {
+                $userQuery = Get-ADUser -Filter {accountExpirationDate -lt $currentDate} -Properties samAccountName, enabled | 
+                    Select-Object -Property samAccountName, enabled, isExpired
+                $reportDataTable.Columns.AddRange(@(
+                        'samAccountName',
+                        'enabled',
+                        'isExpired'
+                    )
+                )
+                foreach($user in $userQuery){
+                    $user.isExpired = $true
+                    [void]$reportDataTable.Rows.Add(
+                        $user.samAccountName,
+                        $user.enabled,
+                        $user.isExpired
+                    )
+                } 
+            }
+            "Users with account that is set to expire" {
+                Get-UserDataByFilter -filter {accountExpirationDate -gt $currentDate} -propertyName 'accountExpirationDate'
+            }
+            "Users with account that is set to expire in 7 days" {
+                Get-UserDataByFilter -filter {(accountExpirationDate -le $next7days) -and (accountExpirationDate -gt $currentDate)} -propertyName 'accountExpirationDate'
+            }
+            "Users with account that is set to expire in 30 days" {
+                Get-UserDataByFilter -filter {(accountExpirationDate -le $next30days) -and (accountExpirationDate -gt $currentDate)} -propertyName 'accountExpirationDate'
+            }
+            "Users inactive for 7 days" {
+                Get-UserDataByFilter -filter {lastLogonDate -lt $last7days} -propertyName 'lastLogonDate'
+            }
+            "Users inactive for 30 days" {
+                Get-UserDataByFilter -filter {lastLogonDate -lt $last30days} -propertyName 'lastLogonDate'
+            }
+            "Users inactive for 90 days" {
+                Get-UserDataByFilter -filter {lastLogonDate -lt $last90days} -propertyName 'lastLogonDate'
+            }
+            "Users inactive for 180 days" {
+                Get-UserDataByFilter -filter {lastLogonDate -lt $last180days} -propertyName 'lastLogonDate'
+            }
+            "Users that logged on in last 24h" {
+                Get-UserDataByFilter -filter {lastLogonDate -ge $last24h} -propertyName 'lastLogonDate'
+            }
+            "Users that logged on in last 7 days" {
+                Get-UserDataByFilter -filter {lastLogonDate -ge $last7days} -propertyName 'lastLogonDate'
+            }
+            "Users that logged on in last 30 days" {
+                Get-UserDataByFilter -filter {lastLogonDate -ge $last30days} -propertyName 'lastLogonDate'
+            }
+            "Users that must change their password at next logon" {
+                $userQuery = Get-ADUser -Filter {pwdLastSet -eq 0} -Properties samAccountName  | Select-Object -Property samAccountName, pwdChangeRequired
+                $reportDataTable.Columns.AddRange(@(
+                        'samAccountName',
+                        'pwdChangeRequired'
+                    )
+                )
+                foreach($user in $userQuery){
+                    $user.pwdChangeRequired = $true
+                    [void]$reportDataTable.Rows.Add(
+                        $user.samAccountName,
+                        $user.pwdChangeRequired
+                    )
+                } 
+            }
+            "Users that must change their password in 1 day" {
+                $userQuery = Get-ADUser -LDAPFilter "(msDS-UserPasswordExpiryTimeComputed >= $last24h.ToFileTime())" -Properties samAccountName, passwordLastSet  | 
+                    Select-Object -Property samAccountName, passwordLastSet
+                $reportDataTable.Columns.AddRange(@(
+                        'samAccountName',
+                        'passwordLastSet'
+                    )
+                )
+                foreach($user in $userQuery){
+                    [void]$reportDataTable.Rows.Add(
+                        $user.samAccountName,
+                        $user.passwordLastSet
+                    )
+                } 
+            }
+            "Users that must change their password in 7 days" {
+                $userQuery = Get-ADUser -LDAPFilter "(msDS-UserPasswordExpiryTimeComputed >= $last7days.ToFileTime())" -Properties samAccountName, passwordLastSet  | 
+                    Select-Object -Property samAccountName, passwordLastSet
+                $reportDataTable.Columns.AddRange(@(
+                        'samAccountName',
+                        'passwordLastSet'
+                    )
+                )
+                foreach($user in $userQuery){
+                    [void]$reportDataTable.Rows.Add(
+                        $user.samAccountName,
+                        $user.passwordLastSet
+                    )
+                } 
+            }
+            "Users with expired password" {
+                $userQuery = Get-AdUser -Filter {enabled -eq $true} -Properties samAccountName, passwordExpired, passwordLastSet | 
+                Where-Object {$_.passwordExpired -eq $true}  | 
+                Select-Object -Property samAccountName, passwordExpired, passwordLastSet
+                $reportDataTable.Columns.AddRange(@(
+                        'samAccountName',
+                        'passwordExpired',
+                        'passwordLastSet'
+                    )
+                )
+                foreach($user in $userQuery){
+                    [void]$reportDataTable.Rows.Add(
+                        $user.samAccountName,
+                        $user.passwordExpired,
+                        $user.passwordLastSet
+                    )
+                } 
+            }
+            "Users with non-expiring password" {
+                Get-UserDataByFilter -filter {passwordNeverExpires -eq $true} -propertyName 'passwordNeverExpires'
+            }
+            "Users that can't change their password" {
+                $userQuery = Get-ADUser -Filter * -Properties samAccountName, cannotChangePassword |
+                Where-Object { $_.cannotChangePassword -eq $true } |
+                Select-Object -Property samAccountName, cannotChangePassword
+                $reportDataTable.Columns.AddRange(@(
+                        'samAccountName',
+                        'cannotChangePassword'
+                    )
+                )
+                foreach($user in $userQuery){
+                    [void]$reportDataTable.Rows.Add(
+                        $user.samAccountName,
+                        $user.cannotChangePassword
+                    )
+                } 
+            }
+            "Users that changed their password in last 7 days" {
+                Get-UserDataByFilter -filter {passwordLastSet -ge $last7days} -propertyName 'passwordLastSet'
+            }
+            "Users that changed their password in last 30 days" {
+                Get-UserDataByFilter -filter {passwordLastSet -ge $last30days} -propertyName 'passwordLastSet'
+            }
+            "Users that changed their password in last 90 days" {
+                Get-UserDataByFilter -filter {passwordLastSet -ge $last90days} -propertyName 'passwordLastSet'
+            }
+        }
+         #Display report data in reportDataGrid.
+        $reportDataGrid.ItemsSource = $reportDataTable.DefaultView
+    }   
+)
+###############################################################################################################
+############################################### Button handlers ###############################################
+
+# Event handler for the Export to CSV button click
+$buttonExportCSV.Add_Click({ Export-DataToCSV -DataGrid $reportDataGrid })
+###############################################################################################################
+
+###############################################################################################################
+############################################### /EVENT HANDLERS ###############################################
+###############################################################################################################
 
 #Select all AD users.
 $users = Get-ADUser -Filter * -Properties displayName, enabled, samAccountName | Select-Object -Property displayName, enabled, samAccountName 
 
-#Declare a DataTable and add columns.
-$userDataTable = [System.Data.DataTable]::New()
-$userDataTable.Columns.AddRange(@(
-        'displayName',
-        'enabled',
-        'samAccountName'
-    )
-)
+
 #Populate the DataTable with selected user data.
 foreach($user in $users){
     [void]$userDataTable.Rows.Add(
@@ -259,11 +549,7 @@ foreach($user in $users){
 
 #Select all AD groups. 
 $groups = Get-ADGroup -Filter * -Properties samAccountName | Select-Object -Property samAccountName
-$groupDataTable = [System.Data.DataTable]::New()
-$groupDataTable.Columns.AddRange(@(
-        'samAccountName'
-    )
-)
+
 foreach($group in $groups){
     [void]$groupDataTable.Rows.Add(
         $group.samAccountName
@@ -276,5 +562,5 @@ foreach($group in $groups){
 $userDataGrid.ItemsSource = $userDataTable.DefaultView
 $groupDataGrid.ItemsSource = $groupDataTable.DefaultView
 
-#Show GUI.
+#Load GUI.
 $wpf.ShowDialog() | Out-Null

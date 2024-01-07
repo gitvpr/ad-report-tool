@@ -3,12 +3,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys='clr-namespace:System;assembly=mscorlib'
         xmlns:local="clr-namespace:WpfApp1"
         mc:Ignorable="d"
         Title="Raporty AD" 
         Width="960"
         Height="590"
+        
 >
+
     <Grid>
         <TabControl>
             <!-- Users -->
@@ -208,11 +211,6 @@
                                     <TextBlock Text="Group name" FontSize="18" Width="Auto"/>
                                 </DataGridTextColumn.Header>
                             </DataGridTextColumn>
-                            <!-- <DataGridTextColumn Binding="{Binding groupUserCount}" Width="Auto">
-                                <DataGridTextColumn.Header>
-                                    <TextBlock Text="User count" FontSize="18" Width="Auto"/>
-                                </DataGridTextColumn.Header>
-                            </DataGridTextColumn> -->
                         </DataGrid.Columns>
                     </DataGrid>
                     <Grid Grid.Column="1" Grid.Row="1">
@@ -267,8 +265,56 @@
                     </Grid>
                 </Grid>
             </TabItem>
+            <!-- Raporty-->
             <TabItem Header="Raports">
-                <TextBlock Text=""/>
+                <Grid Background="LightBlue">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="35*"></ColumnDefinition>
+                        <ColumnDefinition Width="65*"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <ListBox Grid.Column="0" x:Name='reportOptions' Margin="2">
+                        <ListBox.ItemsSource>
+                            <x:Array Type='{x:Type sys:String}'>
+                                <sys:String>Users modified in Last 30 days</sys:String>
+                                <sys:String>Users modified in Last 90 days</sys:String>
+                                <sys:String>Users modified in last 180 days</sys:String>
+                                <sys:String>Users created in last 30 days</sys:String>
+                                <sys:String>Users created in last 90 days</sys:String>
+                                <sys:String>Users created in last 180 days</sys:String>
+                                <sys:String>Disabled user accounts</sys:String>
+                                <sys:String>Users with expiring account</sys:String>
+                                <sys:String>Users with expired account</sys:String>
+                                <sys:String>Users with account that is set to expire</sys:String>
+                                <sys:String>Users with account that is set to expire in 7 days</sys:String>
+                                <sys:String>Users with account that is set to expire in 30 days</sys:String>
+                                <sys:String>Users inactive for 7 days</sys:String>
+                                <sys:String>Users inactive for 30 days</sys:String>
+                                <sys:String>Users inactive for 90 days</sys:String>
+                                <sys:String>Users inactive for 180 days</sys:String>
+                                <sys:String>Users that logged on in last 24h</sys:String>
+                                <sys:String>Users that logged on in last 7 days</sys:String>
+                                <sys:String>Users that logged on in last 30 days</sys:String>
+                                <sys:String>Users that must change their password at next logon</sys:String>
+                                <sys:String>Users that must change their password in 1 day</sys:String>
+                                <sys:String>Users that must change their password in 7 days</sys:String>
+                                <sys:String>Users with expired password</sys:String>
+                                <sys:String>Users with non-expiring password</sys:String>
+                                <sys:String>Users that can't change their password</sys:String>
+                                <sys:String>Users that changed their password in last 7 days</sys:String>
+                                <sys:String>Users that changed their password in last 30 days</sys:String>
+                                <sys:String>Users that changed their password in last 90 days</sys:String>
+                            </x:Array>
+                        </ListBox.ItemsSource>
+                    </ListBox>
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="95*"></RowDefinition>
+                            <RowDefinition Height="5*"></RowDefinition>
+                        </Grid.RowDefinitions>
+                        <DataGrid Name="reportDataGrid"  GridLinesVisibility="Horizontal" AutoGenerateColumns="True" CanUserReorderColumns="True" AlternationCount="2" AlternatingRowBackground="Beige" RowBackground="LightBlue"></DataGrid>
+                        <Button Name="buttonExportCSV"  Grid.Row="1" Content='Export to CSV' HorizontalAlignment='Right'  Margin='1,1,1,1' Width="200"/>
+                    </Grid>
+                </Grid>
             </TabItem>
         </TabControl>
     </Grid>
